@@ -1,89 +1,183 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;; Package management
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(when (>= emacs-major-version 24)
+  (require 'package)
+  (package-initialize)
+  (add-to-list 'package-archives '("melpa" . "http://melpa.milkbox.net/packages/") t)
+  )
+
+(package-initialize)
+
+(unless (package-installed-p 'use-package)
+  (package-refresh-contents)
+  (package-install 'use-package))
+
+(use-package ag
+  :ensure t)
+
+(use-package exec-path-from-shell
+  :ensure t
+  :config
+  (exec-path-from-shell-initialize))
+
+(use-package ido-vertical-mode
+  :ensure t
+  :config
+  (ido-mode 1)
+  (ido-vertical-mode 1)
+  (setq ido-vertical-define-keys 'C-n-and-C-p-only))
+
+(use-package flx-ido
+  :ensure t
+  :config
+  (flx-ido-mode 1)
+  ;; disable ido faces to see flx highlights
+  (setq ido-enable-flex-matching t)
+  (setq ido-use-faces nil))
+
+(use-package markdown-mode
+  :ensure t
+  :config
+  (add-to-list 'auto-mode-alist '("\\.md\\'" . markdown-mode)))
+
+(use-package smex
+  :ensure t
+  :config
+  (global-set-key (kbd "M-x") 'smex)
+  ;; the old M-x
+  (global-set-key (kbd "C-c C-c M-x") 'execute-extended-command))
+
+(use-package coffee-mode
+  :ensure t
+  :config
+  (custom-set-variables '(coffee-tab-width 2)))
+
+(use-package flycheck
+  :config
+  (add-hook 'after-init-hook #'global-flycheck-mode)
+  (setq flycheck-ruby-rubocop-executable "~/.rbenv/shims/rubocop")
+  (if (fboundp 'global-flycheck-mode)
+      (global-flycheck-mode +1)
+    (add-hook 'prog-mode-hook 'flycheck-mode)))
+
+(use-package restclient
+  :ensure t
+  :config
+  (add-to-list 'auto-mode-alist '("\\.rest\\'" . restclient-mode)))
+
+(use-package smartparens
+  :ensure t
+  :diminish smartparens-mode
+  :config
+  (require 'smartparens-config)
+  (smartparens-global-mode 1))
+
+(use-package yaml-mode
+  :ensure t
+  :mode "\\.yml\\'")
+
+(use-package web-mode
+  :ensure t
+  :config
+  (add-to-list 'auto-mode-alist '("\\.erb\\'" . web-mode))
+  (setq web-mode-markup-indent-offset 2)
+  (setq web-mode-css-indent-offset 2)
+  (setq web-mode-code-indent-offset 2))
+
+(add-to-list 'load-path "~/.emacs.d/vendor")
+(require 'reek)
+
+(require 'auto-complete)
+(global-auto-complete-mode t)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; Misc settings
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-;; Map meta to Mac command key.
+;; run Lisp under Emacs
+(setq inferior-lisp-program "/usr/bin/clisp")
+
+;; customize minibuffer startup message
+(defvar current-user
+  (getenv
+   (if (equal system-type 'windows-nt) "USERNAME" "USER")))
+(defun display-startup-echo-area-message ()
+  "Customize minibuffer startup message."
+  (message "Hack away, Master %s!" current-user))
+
+;; disable startup screen
+(setq inhibit-startup-screen t)
+
+;; disable tool bar
+(when (fboundp 'tool-bar-mode)
+  (tool-bar-mode -1))
+
+;; disable scroll bar
+(scroll-bar-mode -1)
+
+;; disable blinking cursor
+(blink-cursor-mode -1)
+
+;; disable bell ring
+(setq ring-bell-function 'ignore)
+
+;; highlight the current line
+(global-hl-line-mode +1)
+
+;; nice scrolling
+(setq scroll-margin 0
+      scroll-conservatively 100000
+      scroll-preserve-screen-position 1)
+
+;; map meta to command key
 (setq mac-command-modifier 'meta)
 (setq mac-option-modifier nil)
 
-;; No splash.
-(setq inhibit-splash-screen t)
-
-;; No menu.
-(menu-bar-mode -1)
-
-;;Remove Scrollbar
-(scroll-bar-mode -1)
-
-;; No tabs.
-(setq-default indent-tabs-mode nil)
-
-;; No backups.
-(setq make-backup-files nil)
-
-;;disable auto save
-(setq auto-save-default nil)
-
-;; Show column number.
+;; mode line settings
+(line-number-mode t)
 (column-number-mode t)
+(size-indication-mode t)
 
-;; Highlight current line.
-(global-hl-line-mode t)
-
-;; Show matching parens.
-(show-paren-mode t)
-
-;; Delete trailing whitespace on save.
-(add-hook 'before-save-hook 'delete-trailing-whitespace)
-
-;; y or n.
-(defalias 'yes-or-no-p 'y-or-n-p)
-
-;; Bind commenting.
+;; bind commenting
 (global-set-key (kbd "C-c c") 'comment-or-uncomment-region)
 
-;; Bind cleaning.
+;; bind cleaning
 (global-set-key (kbd "C-c n") 'simple-clean-region-or-buffer)
+
+;; do whitespace cleanup on save
+(add-hook 'before-save-hook 'whitespace-cleanup)
+
+;; no tabs
+(setq-default indent-tabs-mode nil)
+
+;; no backups
+(setq make-backup-files nil)
+
+;; revert buffers automatically when underlying files are changed externally
+(global-auto-revert-mode t)
+
+;; set font size (value is in 1/10pt, so 100 will give you 10pt)
+(set-face-attribute 'default nil :height 160)
+
+;; show matching parens
+(show-paren-mode t)
+
+;; y or n
+(defalias 'yes-or-no-p 'y-or-n-p)
 
 ;; stop Ruby mode from auto-inserting encoding comment
 (setq ruby-insert-encoding-magic-comment nil)
 
-;; auto reload buffer when changed on disc
-(global-auto-revert-mode t)
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-;; magit commands
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-;; git status
-(global-set-key (kbd "C-x g") 'magit-status)
-
-;; git diff
-(global-set-key (kbd "C-x d") 'magit-diff)
-
-;; git log
-(global-set-key (kbd "C-x l") 'magit-log)
-
-;; git pull
-(global-set-key (kbd "C-x p l") 'magit-pull)
-
-;; git push
-(global-set-key (kbd "C-x p u") 'magit-push)
-
-;; git commit
-(global-set-key (kbd "C-x c o") 'magit-commit)
-
-;; git commit amend
-(global-set-key (kbd "C-x c a") 'magit-commit-amend)
-
-;; git checkout
-(global-set-key (kbd "C-x c h") 'magit-checkout)
+;; utf-8 always and forever
+(prefer-coding-system 'utf-8)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; Clean region or buffer
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defun simple-indent-buffer ()
+(defun simple-clean-buffer ()
   "Indent the currently visited buffer."
   (interactive)
   (indent-region (point-min) (point-max)))
@@ -96,117 +190,16 @@
         (progn
           (indent-region (region-beginning) (region-end))
           (whitespace-cleanup)
-          (message "Cleaned selected region."))
+          (message "Cleaned selected region"))
       (progn
-        (simple-indent-buffer)
+        (simple-clean-buffer)
         (whitespace-cleanup)
-        (message "Cleaned buffer.")))))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-;; Package management
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-;; List packages to install if missing.
-(setq package-list '(flycheck restclient))
-
-;; List repositories containing the packages.
-(setq package-archives '(("elpa" . "http://tromey.com/elpa/")
-                         ("gnu" . "http://elpa.gnu.org/packages/")
-                         ("marmalade" . "http://marmalade-repo.org/packages/")
-                         ("melpa" . "http://melpa.org/packages/")))
-
-;; Load installed packages.
-(package-initialize)
-
-;; Fetch list of packages available.
-(unless package-archive-contents
-  (package-refresh-contents))
-
-;; Install missing packages.
-(dolist (package package-list)
-  (unless (package-installed-p package)
-    (package-install package)))
-
-;; Avoid loading installed packages again after processing the init file.
-(setq package-enable-at-startup nil)
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-;; Flycheck
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(add-hook 'after-init-hook #'global-flycheck-mode)
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-;; Git status in bottom bar
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(defadvice vc-git-mode-line-string (after plus-minus (file) compile activate)
-  (setq ad-return-value
-    (concat ad-return-value
-            (let ((plus-minus (vc-git--run-command-string
-                               file "diff" "--numstat" "--")))
-              (and plus-minus
-                   (string-match "^\\([0-9]+\\)\t\\([0-9]+\\)\t" plus-minus)
-                   (format " +%s-%s" (match-string 1 plus-minus) (match-string 2 plus-minus)))))))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-;; Git latest commit author in bottom bar
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(defadvice vc-git-mode-line-string (after author (file) compile activate)
-  (setq ad-return-value
-        (concat ad-return-value
-                (let ((author
-                       (vc-git--run-command-string file "log" "-n1" "--pretty=format:%an" "--")))
-                  (when author
-                    (concat " " author))))))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-;; Ido
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-package-enable-at-startup
-(ido-mode 1)
-(setq ido-enable-flex-matching t)
-(setq ido-everywhere t)
-
-;;Ido vertical mode
-(require 'ido-vertical-mode)
-(ido-mode 1)
-(ido-vertical-mode 1)
-(setq ido-vertical-define-keys 'C-n-and-C-p-only)
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-;; Smex
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(global-set-key (kbd "M-x") 'smex)
-
-;; This is your old M-x.
-(global-set-key (kbd "C-c C-c M-x") 'execute-extended-command)
+        (message "Cleaned buffer")))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; themes
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-;;(load-theme 'gotham t)
-;;(load-theme 'darktooth t)
-;(load-theme 'afternoon t)
 (load-theme 'spike t)
-
-
-;;disable the merging (the "looking in other directories" in ido vulgo) with
-
-(setq ido-auto-merge-work-directories-length -1)
-
-;;Update Package List
-(when (not package-archive-contents)
-  (package-refresh-contents))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-;; rspec
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-;;(add-to-list 'load-path "/path/to/rspec-mode")
-(require 'rspec-mode)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; webmode
@@ -230,4 +223,26 @@ package-enable-at-startup
 (setq auto-mode-alist (cons '("\\.exs" . elixir-mode) auto-mode-alist))
 (setq auto-mode-alist (cons '("\\.yml" . yaml-mode) auto-mode-alist))
 (setq auto-mode-alist (cons '("\\.html" . web-mode) auto-mode-alist))
+(setq auto-mode-alist (cons '("\\.hbs" . web-mode) auto-mode-alist))
 (setq auto-mode-alist (cons '("\\.coffee" . coffee-mode) auto-mode-alist))
+(custom-set-variables
+ ;; custom-set-variables was added by Custom.
+ ;; If you edit it by hand, you could mess it up, so be careful.
+ ;; Your init file should contain only one such instance.
+ ;; If there is more than one, they won't work right.
+ '(coffee-tab-width 2)
+ '(package-selected-packages
+   (quote
+    (sass-mode yaml-mode web-mode use-package spike-theme smex smartparens restclient markdown-mode ido-vertical-mode flycheck flx-ido exec-path-from-shell coffee-mode ag))))
+(custom-set-faces
+ ;; custom-set-faces was added by Custom.
+ ;; If you edit it by hand, you could mess it up, so be careful.
+ ;; Your init file should contain only one such instance.
+ ;; If there is more than one, they won't work right.
+ )
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;; git commands
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(global-set-key (kbd "C-x g") 'magit-git-command)
