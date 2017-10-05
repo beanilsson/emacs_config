@@ -92,6 +92,9 @@
 (require 'auto-complete)
 (global-auto-complete-mode t)
 
+(unless (package-installed-p 'indium)
+  (package-install 'indium))
+
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; Misc settings
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
