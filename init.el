@@ -49,11 +49,6 @@
   ;; the old M-x
   (global-set-key (kbd "C-c C-c M-x") 'execute-extended-command))
 
-(use-package coffee-mode
-  :ensure t
-  :config
-  (custom-set-variables '(coffee-tab-width 2)))
-
 (use-package flycheck
   :config
   (add-hook 'after-init-hook #'global-flycheck-mode)
@@ -86,14 +81,22 @@
   (setq web-mode-css-indent-offset 2)
   (setq web-mode-code-indent-offset 2))
 
-(add-to-list 'load-path "~/.emacs.d/vendor")
-(require 'reek)
-
+; Show programming language icons instead of text
+(use-package mode-icons-mode
+  :ensure t
+  :diminish mode-icons-mode
+  :config
+  (require 'mode-icons-mode))
+; Word highlighting
+(use-package highlight-symbol
+  :ensure t
+  :diminish highlight-symbol
+  :config
+  (require 'highlight-symbol))
+; Auto complete
 (require 'auto-complete)
 (global-auto-complete-mode t)
 
-(unless (package-installed-p 'indium)
-  (package-install 'indium))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; Misc settings
@@ -249,3 +252,26 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (global-set-key (kbd "C-x g") 'magit-git-command)
+
+;; js lint
+
+(require 'json)
+(require 'flycheck)
+(defun my-parse-jslinter-warning (warning)
+  (flycheck-error-new
+   :line (1+ (cdr (assoc 'line warning)))
+   :column (1+ (cdr (assoc 'column warning)))
+   :message (cdr (assoc 'message warning))
+   :level 'error
+   :buffer (current-buffer)
+   :checker 'javascript-jslinter))
+(defun jslinter-error-parser (output checker buffer)
+  (mapcar 'parse-jslinter-warning
+          (cdr (assoc 'warnings (aref (json-read-from-string output) 0)))))
+(flycheck-define-checker javascript-jslinter
+  "A JavaScript syntax and style checker based on JSLinter.
+
+See URL `https://github.com/tensor5/JSLinter'."
+  :command ("c:/Users/bea//usr/local/lib/node_modules/jslint" "--raw" source)
+  :error-parser jslinter-error-parser
+  :modes (js-mode js2-mode js3-mode))
