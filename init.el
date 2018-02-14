@@ -63,6 +63,10 @@
       (global-flycheck-mode +1)
     (add-hook 'prog-mode-hook 'flycheck-mode)))
 
+(add-to-list 'load-path "~/.emacs.d/")
+(require 'flymake-jshint)
+(add-hook 'js-mode-hook 'flymake-mode)
+
 (use-package restclient
   :ensure t
   :config
@@ -102,6 +106,12 @@
 ; Auto complete
 (require 'auto-complete)
 (global-auto-complete-mode t)
+
+;; Code completion for c/c++
+(add-hook 'c++-mode-hook 'irony-mode)
+(add-hook 'c-mode-hook 'irony-mode)
+
+(add-hook 'irony-mode-hook 'irony-cdb-autosetup-compile-options)
 
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
