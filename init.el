@@ -48,24 +48,6 @@
   :config
   (add-to-list 'auto-mode-alist '("\\.md\\'" . markdown-mode)))
 
-(use-package smex
-  :ensure t
-  :config
-  (global-set-key (kbd "M-x") 'smex)
-  ;; the old M-x
-  (global-set-key (kbd "C-c C-c M-x") 'execute-extended-command))
-
-(use-package flycheck
-  :config
-  (add-hook 'after-init-hook #'global-flycheck-mode)
-  (setq flycheck-ruby-rubocop-executable "~/.rbenv/shims/rubocop")
-  (if (fboundp 'global-flycheck-mode)
-      (global-flycheck-mode +1)
-    (add-hook 'prog-mode-hook 'flycheck-mode)))
-
-(add-to-list 'load-path "~/.emacs.d/")
-(require 'flymake-jshint)
-(add-hook 'js-mode-hook 'flymake-mode)
 
 (use-package restclient
   :ensure t
@@ -91,21 +73,12 @@
   (setq web-mode-css-indent-offset 2)
   (setq web-mode-code-indent-offset 2))
 
-; Show programming language icons instead of text
-(use-package mode-icons-mode
-  :ensure t
-  :diminish mode-icons-mode
-  :config
-  (require 'mode-icons-mode))
 ; Word highlighting
 (use-package highlight-symbol
   :ensure t
   :diminish highlight-symbol
   :config
   (require 'highlight-symbol))
-; Auto complete
-(require 'auto-complete)
-(global-auto-complete-mode t)
 
 ;; Code completion for c/c++
 (add-hook 'c++-mode-hook 'irony-mode)
@@ -221,7 +194,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; themes
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-(load-theme 'spike t)
+(load-theme 'eziam-dark)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; webmode
@@ -253,9 +226,12 @@
  ;; Your init file should contain only one such instance.
  ;; If there is more than one, they won't work right.
  '(coffee-tab-width 2)
+ '(custom-safe-themes
+   (quote
+    ("44247f2a14c661d96d2bff302f1dbf37ebe7616935e4682102b68c0b6cc80095" default)))
  '(package-selected-packages
    (quote
-    (sass-mode yaml-mode web-mode use-package spike-theme smex smartparens restclient markdown-mode ido-vertical-mode flycheck flx-ido exec-path-from-shell coffee-mode ag))))
+    (sass-mode yaml-mode web-mode use-package spike-theme smex smartparens restclient markdown-mode ido-vertical-mode flx-ido exec-path-from-shell coffee-mode ag))))
 (custom-set-faces
  ;; custom-set-faces was added by Custom.
  ;; If you edit it by hand, you could mess it up, so be careful.
@@ -268,26 +244,3 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (global-set-key (kbd "C-x g") 'magit-git-command)
-
-;; js lint
-
-(require 'json)
-(require 'flycheck)
-(defun my-parse-jslinter-warning (warning)
-  (flycheck-error-new
-   :line (1+ (cdr (assoc 'line warning)))
-   :column (1+ (cdr (assoc 'column warning)))
-   :message (cdr (assoc 'message warning))
-   :level 'error
-   :buffer (current-buffer)
-   :checker 'javascript-jslinter))
-(defun jslinter-error-parser (output checker buffer)
-  (mapcar 'parse-jslinter-warning
-          (cdr (assoc 'warnings (aref (json-read-from-string output) 0)))))
-(flycheck-define-checker javascript-jslinter
-  "A JavaScript syntax and style checker based on JSLinter.
-
-See URL `https://github.com/tensor5/JSLinter'."
-  :command ("c:/Users/bea//usr/local/lib/node_modules/jslint" "--raw" source)
-  :error-parser jslinter-error-parser
-  :modes (js-mode js2-mode js3-mode))
