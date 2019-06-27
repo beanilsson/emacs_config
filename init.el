@@ -6,6 +6,25 @@
 ;; Package management
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+(custom-set-variables
+ ;; custom-set-variables was added by Custom.
+ ;; If you edit it by hand, you could mess it up, so be careful.
+ ;; Your init file should contain only one such instance.
+ ;; If there is more than one, they won't work right.
+ '(coffee-tab-width 2)
+ '(custom-safe-themes
+   (quote
+    ("44247f2a14c661d96d2bff302f1dbf37ebe7616935e4682102b68c0b6cc80095" default)))
+ '(package-selected-packages
+   (quote
+    (green-phosphor-theme highlight-symbol flycheck js2-mode json-mode web-mode sass-mode yaml-mode use-package spike-theme smex smartparens restclient markdown-mode ido-vertical-mode flx-ido exec-path-from-shell coffee-mode ag))))
+(custom-set-faces
+ ;; custom-set-faces was added by Custom.
+ ;; If you edit it by hand, you could mess it up, so be careful.
+ ;; Your init file should contain only one such instance.
+ ;; If there is more than one, they won't work right.
+ )
+
 
 ;;; Code:
 (when (>= emacs-major-version 24)
@@ -23,10 +42,10 @@
 (use-package ag
   :ensure t)
 
-(use-package exec-path-from-shell
-  :ensure t
-  :config
-  (exec-path-from-shell-initialize))
+;; (use-package exec-path-from-shell
+;;   :ensure t
+;;   :config
+;;   (exec-path-from-shell-initialize))
 
 (use-package ido-vertical-mode
   :ensure t
@@ -48,12 +67,6 @@
   :config
   (add-to-list 'auto-mode-alist '("\\.md\\'" . markdown-mode)))
 
-
-(use-package restclient
-  :ensure t
-  :config
-  (add-to-list 'auto-mode-alist '("\\.rest\\'" . restclient-mode)))
-
 (use-package smartparens
   :ensure t
   :diminish smartparens-mode
@@ -65,13 +78,13 @@
   :ensure t
   :mode "\\.yml\\'")
 
-(use-package web-mode
-  :ensure t
-  :config
-  (add-to-list 'auto-mode-alist '("\\.erb\\'" . web-mode))
-  (setq web-mode-markup-indent-offset 2)
-  (setq web-mode-css-indent-offset 2)
-  (setq web-mode-code-indent-offset 2))
+;(use-package web-mode
+;  :ensure t
+;  :config
+;  (add-to-list 'auto-mode-alist '("\\.erb\\'" . web-mode))
+;  (setq web-mode-markup-indent-offset 2)
+;  (setq web-mode-css-indent-offset 2)
+;  (setq web-mode-code-indent-offset 2))
 
 ; Word highlighting
 (use-package highlight-symbol
@@ -194,14 +207,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; themes
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-(load-theme 'eziam-dark)
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-;; webmode
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-(setq web-mode-markup-indent-offset 2)
-(setq web-mode-css-indent-offset 2)
-(setq web-mode-code-indent-offset 2)
+(load-theme 'green-phosphor t)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; font size
@@ -217,8 +223,7 @@
 (setq auto-mode-alist (cons '("\\.ex" . elixir-mode) auto-mode-alist))
 (setq auto-mode-alist (cons '("\\.exs" . elixir-mode) auto-mode-alist))
 (setq auto-mode-alist (cons '("\\.yml" . yaml-mode) auto-mode-alist))
-(setq auto-mode-alist (cons '("\\.html" . web-mode) auto-mode-alist))
-(setq auto-mode-alist (cons '("\\.hbs" . web-mode) auto-mode-alist))
+;(setq auto-mode-alist (cons '("\\.html" . web-mode) auto-mode-alist))
 (setq auto-mode-alist (cons '("\\.coffee" . coffee-mode) auto-mode-alist))
 (custom-set-variables
  ;; custom-set-variables was added by Custom.
@@ -231,7 +236,7 @@
     ("44247f2a14c661d96d2bff302f1dbf37ebe7616935e4682102b68c0b6cc80095" default)))
  '(package-selected-packages
    (quote
-    (sass-mode yaml-mode web-mode use-package spike-theme smex smartparens restclient markdown-mode ido-vertical-mode flx-ido exec-path-from-shell coffee-mode ag))))
+    (sass-mode yaml-mode use-package spike-theme smex smartparens restclient markdown-mode ido-vertical-mode flx-ido exec-path-from-shell coffee-mode ag))))
 (custom-set-faces
  ;; custom-set-faces was added by Custom.
  ;; If you edit it by hand, you could mess it up, so be careful.
@@ -240,7 +245,54 @@
  )
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-;; git commands
+;; React, eslint and babel setup
+;; http://codewinds.com/blog/2015-04-02-emacs-flycheck-eslint-jsx.html
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(global-set-key (kbd "C-x g") 'magit-git-command)
+;; use web-mode for .js files
+(add-to-list 'auto-mode-alist '("\\.js$" . web-mode))
+
+;; require flycheck
+(require 'flycheck)
+
+;; turn on flychecking globally
+(add-hook 'after-init-hook #'global-flycheck-mode)
+
+;; disable jshint in favour of eslint
+(setq-default flycheck-disabled-checkers (append flycheck-disabled-checkers '(javascript-jshint)))
+
+;; use eslint with web-mode for js files
+(flycheck-add-mode 'javascript-eslint 'web-mode)
+
+;; customise flycheck temp file prefix
+(setq-default flycheck-temp-prefix ".flycheck")
+
+;; disable json-jsonlist checking for json files
+(setw-default flycheck-disabled-checkers (append flycheck-disabled-checkers '(json-jsonlist)))
+
+;; use local eslint from node_modules before global
+;; http://emacs.stackexchange.com/questions/21205/flycheck-with-file-relative-eslint-executable
+(defun my/use-eslint-from-node-modules ()
+  (let* ((root (locate-dominating-file
+                (or (buffer-file-name) default-directory)
+                "node_modules"))
+         (eslint (and root
+                      (expand-file-name "node_modules/eslint/bin/eslint.js"
+                                        root))))
+    (when (and eslint (file-executable-p eslint))
+      (setq-local flycheck-javascript-eslint-executable eslint))))
+(add-hook 'flycheck-mode-hook #'my/use-eslint-from-node-modules)
+
+;; adjust indents for web-mode to 2 spaces
+(defun my-web-mode-hook ()
+  (setq web-mode-markup-indent-offset 2)
+  (setq web-mode-css-indent-offset 2)
+  (setq web-mode-code-indent-offset 2))
+(add-hook 'web-mode-hook  'my-web-mode-hook)
+
+;; for better jsx syntax-highlighting in web-mode
+(defadvice web-mode-highlight-part (around tweak-jsx activate)
+  (if (equal web-mode-content-type "jsx")
+    (let ((web-mode-enable-part-face nil))
+      ad-do-it)
+    ad-do-it))
