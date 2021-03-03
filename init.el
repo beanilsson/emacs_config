@@ -13,11 +13,9 @@
  ;; If there is more than one, they won't work right.
  '(coffee-tab-width 2)
  '(custom-safe-themes
-   (quote
-    ("44247f2a14c661d96d2bff302f1dbf37ebe7616935e4682102b68c0b6cc80095" default)))
+   '("44247f2a14c661d96d2bff302f1dbf37ebe7616935e4682102b68c0b6cc80095" default))
  '(package-selected-packages
-   (quote
-    (green-phosphor-theme highlight-symbol flycheck js2-mode json-mode web-mode sass-mode yaml-mode use-package spike-theme smex smartparens restclient markdown-mode ido-vertical-mode flx-ido exec-path-from-shell coffee-mode ag))))
+   '(prettier-js prettier ## auto-complete-mode yafolding sass-mode yaml-mode use-package spike-theme smex smartparens restclient markdown-mode ido-vertical-mode flx-ido exec-path-from-shell coffee-mode ag)))
 (custom-set-faces
  ;; custom-set-faces was added by Custom.
  ;; If you edit it by hand, you could mess it up, so be careful.
@@ -30,10 +28,9 @@
 (when (>= emacs-major-version 24)
   (require 'package)
   (package-initialize)
-  (add-to-list 'package-archives '("melpa" . "http://melpa.milkbox.net/packages/") t)
+  (add-to-list 'package-archives
+               '("melpa" . "https://melpa.org/packages/") t)
   )
-
-(package-initialize)
 
 (unless (package-installed-p 'use-package)
   (package-refresh-contents)
@@ -78,15 +75,6 @@
   :ensure t
   :mode "\\.yml\\'")
 
-;(use-package web-mode
-;  :ensure t
-;  :config
-;  (add-to-list 'auto-mode-alist '("\\.erb\\'" . web-mode))
-;  (setq web-mode-markup-indent-offset 2)
-;  (setq web-mode-css-indent-offset 2)
-;  (setq web-mode-code-indent-offset 2))
-
-; Word highlighting
 (use-package highlight-symbol
   :ensure t
   :diminish highlight-symbol
@@ -223,34 +211,20 @@
 (setq auto-mode-alist (cons '("\\.ex" . elixir-mode) auto-mode-alist))
 (setq auto-mode-alist (cons '("\\.exs" . elixir-mode) auto-mode-alist))
 (setq auto-mode-alist (cons '("\\.yml" . yaml-mode) auto-mode-alist))
-;(setq auto-mode-alist (cons '("\\.html" . web-mode) auto-mode-alist))
+                                        ;(setq auto-mode-alist (cons '("\\.html" . web-mode) auto-mode-alist))
 (setq auto-mode-alist (cons '("\\.coffee" . coffee-mode) auto-mode-alist))
-(custom-set-variables
- ;; custom-set-variables was added by Custom.
- ;; If you edit it by hand, you could mess it up, so be careful.
- ;; Your init file should contain only one such instance.
- ;; If there is more than one, they won't work right.
- '(coffee-tab-width 2)
- '(custom-safe-themes
-   (quote
-    ("44247f2a14c661d96d2bff302f1dbf37ebe7616935e4682102b68c0b6cc80095" default)))
- '(package-selected-packages
-   (quote
-    (sass-mode yaml-mode use-package spike-theme smex smartparens restclient markdown-mode ido-vertical-mode flx-ido exec-path-from-shell coffee-mode ag))))
-(custom-set-faces
- ;; custom-set-faces was added by Custom.
- ;; If you edit it by hand, you could mess it up, so be careful.
- ;; Your init file should contain only one such instance.
- ;; If there is more than one, they won't work right.
- )
+(require 'auto-complete)
 
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-;; React, eslint and babel setup
-;; http://codewinds.com/blog/2015-04-02-emacs-flycheck-eslint-jsx.html
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+(add-to-list 'auto-mode-alist '("\\.jsx?$" . web-mode))
+(setq web-mode-content-types-alist '(("jsx" . "\\.js[x]?\\'")))
+(defun web-mode-init-hook ()
+  "Hooks for Web mode.  Adjust indent."
+  (defvar web-mode-markup-indent-offset 4))
 
-;; use web-mode for .js files
-(add-to-list 'auto-mode-alist '("\\.js$" . web-mode))
+(add-hook 'web-mode-hook  'web-mode-init-hook)
+
+(require 'prettier-js)
+(add-hook 'web-mode-hook 'prettier-js-mode)
 
 ;; require flycheck
 (require 'flycheck)
@@ -268,10 +242,10 @@
 (setq-default flycheck-temp-prefix ".flycheck")
 
 ;; disable json-jsonlist checking for json files
-(setw-default flycheck-disabled-checkers (append flycheck-disabled-checkers '(json-jsonlist)))
+(setq-default flycheck-disabled-checkers (append flycheck-disabled-checkers '(json-jsonlist)))
 
-;; use local eslint from node_modules before global
-;; http://emacs.stackexchange.com/questions/21205/flycheck-with-file-relative-eslint-executable
+;;use local eslint from node_modules before global
+;;http://emacs.stackexchange.com/questions/21205/flycheck-with-file-relative-eslint-executable
 (defun my/use-eslint-from-node-modules ()
   (let* ((root (locate-dominating-file
                 (or (buffer-file-name) default-directory)
@@ -282,13 +256,22 @@
     (when (and eslint (file-executable-p eslint))
       (setq-local flycheck-javascript-eslint-executable eslint))))
 (add-hook 'flycheck-mode-hook #'my/use-eslint-from-node-modules)
+(add-hook 'flycheck-mode-hook 'add-node-modules-path)
 
-;; adjust indents for web-mode to 2 spaces
-(defun my-web-mode-hook ()
-  (setq web-mode-markup-indent-offset 2)
-  (setq web-mode-css-indent-offset 2)
-  (setq web-mode-code-indent-offset 2))
-(add-hook 'web-mode-hook  'my-web-mode-hook)
+(defun enable-minor-mode (my-pair)
+  "Enable minor mode if filename match the regexp.  MY-PAIR is a cons cell (regexp . minor-mode)."
+  (if (buffer-file-name)
+      (if (string-match (car my-pair) buffer-file-name)
+          (funcall (cdr my-pair)))))
+
+(add-hook 'web-mode-hook #'(lambda ()
+                            (enable-minor-mode
+                             '("\\.jsx?\\'" . prettier-js-mode))))
+
+(eval-after-load 'web-mode
+    '(progn
+       (add-hook 'web-mode-hook #'add-node-modules-path)
+       (add-hook 'web-mode-hook #'prettier-js-mode)))
 
 ;; for better jsx syntax-highlighting in web-mode
 (defadvice web-mode-highlight-part (around tweak-jsx activate)
@@ -296,3 +279,5 @@
     (let ((web-mode-enable-part-face nil))
       ad-do-it)
     ad-do-it))
+
+;;; init.el ends here
