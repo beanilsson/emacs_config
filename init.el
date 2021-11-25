@@ -13,9 +13,9 @@
  ;; If there is more than one, they won't work right.
  '(coffee-tab-width 2)
  '(custom-safe-themes
-   '("44247f2a14c661d96d2bff302f1dbf37ebe7616935e4682102b68c0b6cc80095" default))
+   '("583148e87f779040b5349db48b6fcad6fe9a873c6ada20487e9a1ec40d845505" "44247f2a14c661d96d2bff302f1dbf37ebe7616935e4682102b68c0b6cc80095" default))
  '(package-selected-packages
-   '(prettier-js prettier ## auto-complete-mode yafolding sass-mode yaml-mode use-package spike-theme smex smartparens restclient markdown-mode ido-vertical-mode flx-ido exec-path-from-shell coffee-mode ag)))
+   '(move-text run-import-js import-js tide typescript-mode fold-this yafolding-mode ac-js2 auto-complete magit flymake-eslint add-node-modules-path web-mode prettier-js prettier ## auto-complete-mode yafolding sass-mode yaml-mode use-package spike-theme smex smartparens restclient markdown-mode ido-vertical-mode flx-ido exec-path-from-shell coffee-mode ag)))
 (custom-set-faces
  ;; custom-set-faces was added by Custom.
  ;; If you edit it by hand, you could mess it up, so be careful.
@@ -81,6 +81,18 @@
   :config
   (require 'highlight-symbol))
 
+(require 'yafolding)
+
+(use-package yafolding
+  :ensure t
+  :config
+  (add-to-list 'auto-mode-alist '("\\.json\\'" . yafolding-mode)))
+
+(require 'fold-this)
+(global-set-key (kbd "C-c C-f") 'fold-this-all)
+(global-set-key (kbd "C-c C-F") 'fold-this)
+(global-set-key (kbd "C-c M-f") 'fold-this-unfold-all)
+
 ;; Code completion for c/c++
 (add-hook 'c++-mode-hook 'irony-mode)
 (add-hook 'c-mode-hook 'irony-mode)
@@ -142,6 +154,18 @@
 ;; bind cleaning
 (global-set-key (kbd "C-c n") 'simple-clean-region-or-buffer)
 
+;; move-text bindings
+(global-set-key (kbd "M-p") 'move-text-up)
+(global-set-key (kbd "M-n") 'move-text-down)
+
+;; yafolding bindings
+(defvar yafolding-mode-map
+  (let ((map (make-sparse-keymap)))
+    (define-key map (kbd "<C-q-return>") #'yafolding-hide-parent-element)
+    (define-key map (kbd "<C-M-return>") #'yafolding-toggle-all)
+    (define-key map (kbd "<C-return>") #'yafolding-toggle-element)
+    map))
+
 ;; do whitespace cleanup on save
 (add-hook 'before-save-hook 'whitespace-cleanup)
 
@@ -195,7 +219,8 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; themes
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-(load-theme 'green-phosphor t)
+(add-to-list 'custom-theme-load-path "~/.emacs.d/themes/")
+(load-theme 'zenburn t)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; font size
@@ -213,7 +238,7 @@
 (setq auto-mode-alist (cons '("\\.yml" . yaml-mode) auto-mode-alist))
                                         ;(setq auto-mode-alist (cons '("\\.html" . web-mode) auto-mode-alist))
 (setq auto-mode-alist (cons '("\\.coffee" . coffee-mode) auto-mode-alist))
-(require 'auto-complete)
+                                        ;(require 'auto-complete)
 
 (add-to-list 'auto-mode-alist '("\\.jsx?$" . web-mode))
 (setq web-mode-content-types-alist '(("jsx" . "\\.js[x]?\\'")))
@@ -225,6 +250,12 @@
 
 (require 'prettier-js)
 (add-hook 'web-mode-hook 'prettier-js-mode)
+
+;; Force single quotes and trailing comma
+(setq prettier-js-args '(
+                         "--single-quote" "true"
+                         "--trailing-comma" "all"
+))
 
 ;; require flycheck
 (require 'flycheck)
@@ -279,5 +310,65 @@
     (let ((web-mode-enable-part-face nil))
       ad-do-it)
     ad-do-it))
+
+;; auto complete js
+(add-hook 'js2-mode-hook 'ac-js2-mode)
+
+(add-to-list 'load-path "~/.emacs.d")    ; This may not be appeared if you have already added.
+(require 'auto-complete-config)
+(ac-config-default)
+
+;; tsx
+  (require 'web-mode)
+
+  (add-to-list 'auto-mode-alist '("\\.tsx\\'" . web-mode))
+  (add-hook 'web-mode-hook
+            (lambda ()
+              (when (string-equal "tsx" (file-name-extension buffer-file-name))
+                (setup-tide-mode))))
+
+  ;; enable typescript - tslint checker
+(flycheck-add-mode 'typescript-tslint 'web-mode)
+
+;; ts
+  (require 'web-mode)
+
+  (add-to-list 'auto-mode-alist '("\\.ts\\'" . web-mode))
+  (add-hook 'web-mode-hook
+            (lambda ()
+              (when (string-equal "ts" (file-name-extension buffer-file-name))
+                (setup-tide-mode))))
+
+  ;; enable typescript - tslint checker
+  (flycheck-add-mode 'typescript-tslint 'web-mode)
+
+;; import-js
+(require 'import-js)
+(require 'grizzl)
+
+;; tide
+  (use-package tide :ensure t)
+  (use-package company :ensure t)
+  (use-package flycheck :ensure t)
+
+  (defun setup-tide-mode ()
+    (interactive)
+    (tide-setup)
+    (flycheck-mode +1)
+    (setq flycheck-check-syntax-automatically '(save mode-enabled))
+    (eldoc-mode +1)
+    (tide-hl-identifier-mode +1)
+    ;; company is an optional dependency. You have to
+    ;; install it separately via package-install
+    ;; `M-x package-install [ret] company`
+    (company-mode +1))
+
+  ;; aligns annotation to the right hand side
+  (setq company-tooltip-align-annotations t)
+
+  ;; formats the buffer before saving
+  (add-hook 'before-save-hook 'tide-format-before-save)
+
+(add-hook 'typescript-mode-hook #'setup-tide-mode)
 
 ;;; init.el ends here
