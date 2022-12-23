@@ -15,7 +15,7 @@
  '(custom-safe-themes
    '("583148e87f779040b5349db48b6fcad6fe9a873c6ada20487e9a1ec40d845505" "44247f2a14c661d96d2bff302f1dbf37ebe7616935e4682102b68c0b6cc80095" default))
  '(package-selected-packages
-   '(move-text run-import-js import-js tide typescript-mode fold-this yafolding-mode ac-js2 auto-complete magit flymake-eslint add-node-modules-path web-mode prettier-js prettier ## auto-complete-mode yafolding sass-mode yaml-mode use-package spike-theme smex smartparens restclient markdown-mode ido-vertical-mode flx-ido exec-path-from-shell coffee-mode ag)))
+   '(highlight-symbol js-comint move-text run-import-js import-js tide typescript-mode fold-this yafolding-mode ac-js2 auto-complete magit flymake-eslint add-node-modules-path web-mode prettier-js prettier ## auto-complete-mode yafolding sass-mode yaml-mode use-package spike-theme smex smartparens restclient markdown-mode ido-vertical-mode flx-ido exec-path-from-shell coffee-mode ag)))
 (custom-set-faces
  ;; custom-set-faces was added by Custom.
  ;; If you edit it by hand, you could mess it up, so be careful.
@@ -98,7 +98,6 @@
 (add-hook 'c-mode-hook 'irony-mode)
 
 (add-hook 'irony-mode-hook 'irony-cdb-autosetup-compile-options)
-
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; Misc settings
@@ -370,5 +369,8 @@
   (add-hook 'before-save-hook 'tide-format-before-save)
 
 (add-hook 'typescript-mode-hook #'setup-tide-mode)
+
+;; js-comint
+(require 'js-comint)
 
 ;;; init.el ends here
